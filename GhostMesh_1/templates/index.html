@@ -4,7 +4,6 @@
     <title>GhostMesh AI vs AI</title>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
-    <!-- Google Font -->
     <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;600&display=swap" rel="stylesheet">
 
     <style>
@@ -31,6 +30,22 @@
             50% { opacity: 0.4; }
         }
 
+        .controls {
+            text-align: center;
+            margin-top: 10px;
+        }
+
+        .controls button {
+            padding: 10px 20px;
+            margin: 5px;
+            border: none;
+            cursor: pointer;
+            font-weight: bold;
+        }
+
+        .start { background: green; color: white; }
+        .stop { background: red; color: white; }
+
         .dashboard {
             display: flex;
             justify-content: space-around;
@@ -41,26 +56,14 @@
             width: 250px;
             padding: 20px;
             border-radius: 15px;
-            backdrop-filter: blur(10px);
             background: rgba(255,255,255,0.05);
             box-shadow: 0 0 15px rgba(0,255,255,0.2);
             text-align: center;
         }
 
-        .attacker {
-            border: 1px solid red;
-            box-shadow: 0 0 15px red;
-        }
-
-        .defender {
-            border: 1px solid lime;
-            box-shadow: 0 0 15px lime;
-        }
-
-        .dominance {
-            border: 1px solid cyan;
-            box-shadow: 0 0 15px cyan;
-        }
+        .attacker { box-shadow: 0 0 15px red; }
+        .defender { box-shadow: 0 0 15px lime; }
+        .dominance { box-shadow: 0 0 15px cyan; }
 
         canvas {
             display: block;
@@ -92,19 +95,10 @@
 
         tr:hover {
             background: rgba(0,255,255,0.1);
-            transition: 0.3s;
         }
 
-        .blocked {
-            color: lime;
-            font-weight: bold;
-        }
-
-        .breached {
-            color: red;
-            font-weight: bold;
-            text-shadow: 0 0 8px red;
-        }
+        .blocked { color: lime; }
+        .breached { color: red; text-shadow: 0 0 8px red; }
     </style>
 </head>
 
@@ -112,6 +106,11 @@
 
 <h1>⚔️ GhostMesh: AI vs AI Cyber Battle</h1>
 <div class="live">● LIVE SYSTEM ACTIVE</div>
+
+<div class="controls">
+    <button class="start" onclick="startSim()">▶ Start</button>
+    <button class="stop" onclick="stopSim()">⏹ Stop</button>
+</div>
 
 <div class="dashboard">
     <div class="card attacker">
@@ -131,18 +130,18 @@
 </div>
 
 <h2 style="text-align:center;">📊 Battle Trend Analysis</h2>
-<canvas id="chart" width="600" height="200"></canvas>
+<canvas id="chart"></canvas>
 
 <table>
-    <thead>
-        <tr>
-            <th>ID</th>
-            <th>Attack</th>
-            <th>Status</th>
-            <th>Confidence</th>
-        </tr>
-    </thead>
-    <tbody id="logTable"></tbody>
+<thead>
+<tr>
+<th>ID</th>
+<th>Attack</th>
+<th>Status</th>
+<th>Confidence</th>
+</tr>
+</thead>
+<tbody id="logTable"></tbody>
 </table>
 
 <audio id="alertSound">
@@ -153,6 +152,7 @@
 let attackerData = [];
 let defenderData = [];
 let labels = [];
+let intervalId = null;
 
 const ctx = document.getElementById('chart').getContext('2d');
 
@@ -161,21 +161,24 @@ const chart = new Chart(ctx, {
     data: {
         labels: labels,
         datasets: [
-            {
-                label: 'Attacker',
-                data: attackerData,
-                borderColor: 'red',
-                tension: 0.4
-            },
-            {
-                label: 'Defender',
-                data: defenderData,
-                borderColor: 'lime',
-                tension: 0.4
-            }
+            { label: 'Attacker', data: attackerData, borderColor: 'red' },
+            { label: 'Defender', data: defenderData, borderColor: 'lime' }
         ]
     }
 });
+
+async function startSim() {
+    await fetch('/start');
+    if (!intervalId) {
+        intervalId = setInterval(loadLogs, 2000);
+    }
+}
+
+async function stopSim() {
+    await fetch('/stop');
+    clearInterval(intervalId);
+    intervalId = null;
+}
 
 async function loadLogs() {
     const res = await fetch('/logs');
@@ -224,14 +227,11 @@ async function loadLogs() {
 
     if (breach) {
         document.getElementById("alertSound").play();
-        document.body.style.boxShadow = "0 0 50px red";
-        setTimeout(() => {
-            document.body.style.boxShadow = "none";
-        }, 300);
     }
 }
 
-setInterval(loadLogs, 2000);
+// start automatically
+startSim();
 </script>
 
 </body>
