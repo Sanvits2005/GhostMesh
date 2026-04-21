@@ -9,32 +9,35 @@ app = Flask(__name__)
 logs = []
 attacker_score = 0
 defender_score = 0
+running = True
 
 def auto_generate():
-    global attacker_score, defender_score
+    global attacker_score, defender_score, running
 
     while True:
-        attack_type, features = generate_attack()
-        result = predict(features)
+        if running:
+            attack_type, features = generate_attack()
+            result = predict(features)
 
-        success = not result["anomaly"]
+            success = not result["anomaly"]
 
-        update_attacker(attack_type, success)
-        update_defender(features, result["anomaly"])
+            update_attacker(attack_type, success)
+            update_defender(features, result["anomaly"])
 
-        if success:
-            attacker_score += 1
-        else:
-            defender_score += 1
+            if success:
+                attacker_score += 1
+            else:
+                defender_score += 1
 
-        log = {
-            "id": len(logs) + 1,
-            "attack": attack_type,
-            "status": "Breached ⚠️" if success else "Blocked",
-            "confidence": result["confidence"]
-        }
+            log = {
+                "id": len(logs) + 1,
+                "attack": attack_type,
+                "status": "Breached ⚠️" if success else "Blocked",
+                "confidence": result["confidence"]
+            }
 
-        logs.append(log)
+            logs.append(log)
+
         time.sleep(2)
 
 @app.route("/")
@@ -49,8 +52,18 @@ def get_logs():
         "defender": defender_score
     })
 
+@app.route("/start")
+def start():
+    global running
+    running = True
+    return "Started"
+
+@app.route("/stop")
+def stop():
+    global running
+    running = False
+    return "Stopped"
+
 if __name__ == "__main__":
     threading.Thread(target=auto_generate, daemon=True).start()
     app.run(debug=True, use_reloader=False, port=5001)
-    
-    
