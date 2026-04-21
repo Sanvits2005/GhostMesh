@@ -1,0 +1,238 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>GhostMesh AI vs AI</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+    <!-- Google Font -->
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;600&display=swap" rel="stylesheet">
+
+    <style>
+        body {
+            margin: 0;
+            font-family: 'Orbitron', sans-serif;
+            background: linear-gradient(135deg, #0f172a, #020617);
+            color: white;
+        }
+
+        h1 {
+            text-align: center;
+            padding: 20px;
+            text-shadow: 0 0 10px cyan;
+        }
+
+        .live {
+            color: #22c55e;
+            text-align: center;
+            animation: blink 1s infinite;
+        }
+
+        @keyframes blink {
+            50% { opacity: 0.4; }
+        }
+
+        .dashboard {
+            display: flex;
+            justify-content: space-around;
+            margin: 20px;
+        }
+
+        .card {
+            width: 250px;
+            padding: 20px;
+            border-radius: 15px;
+            backdrop-filter: blur(10px);
+            background: rgba(255,255,255,0.05);
+            box-shadow: 0 0 15px rgba(0,255,255,0.2);
+            text-align: center;
+        }
+
+        .attacker {
+            border: 1px solid red;
+            box-shadow: 0 0 15px red;
+        }
+
+        .defender {
+            border: 1px solid lime;
+            box-shadow: 0 0 15px lime;
+        }
+
+        .dominance {
+            border: 1px solid cyan;
+            box-shadow: 0 0 15px cyan;
+        }
+
+        canvas {
+            display: block;
+            margin: 30px auto;
+            background: rgba(255,255,255,0.05);
+            border-radius: 10px;
+            padding: 10px;
+        }
+
+        table {
+            width: 80%;
+            margin: 20px auto;
+            border-collapse: collapse;
+        }
+
+        th, td {
+            padding: 10px;
+            text-align: center;
+        }
+
+        th {
+            background: #020617;
+            border-bottom: 2px solid cyan;
+        }
+
+        tr:nth-child(even) {
+            background: rgba(255,255,255,0.05);
+        }
+
+        tr:hover {
+            background: rgba(0,255,255,0.1);
+            transition: 0.3s;
+        }
+
+        .blocked {
+            color: lime;
+            font-weight: bold;
+        }
+
+        .breached {
+            color: red;
+            font-weight: bold;
+            text-shadow: 0 0 8px red;
+        }
+    </style>
+</head>
+
+<body>
+
+<h1>⚔️ GhostMesh: AI vs AI Cyber Battle</h1>
+<div class="live">● LIVE SYSTEM ACTIVE</div>
+
+<div class="dashboard">
+    <div class="card attacker">
+        <h3>⚔️ Attacker</h3>
+        <h2 id="attackerScore">0</h2>
+    </div>
+
+    <div class="card defender">
+        <h3>🛡️ Defender</h3>
+        <h2 id="defenderScore">0</h2>
+    </div>
+
+    <div class="card dominance">
+        <h3>⚡ Dominance</h3>
+        <h2 id="dominance">Neutral</h2>
+    </div>
+</div>
+
+<h2 style="text-align:center;">📊 Battle Trend Analysis</h2>
+<canvas id="chart" width="600" height="200"></canvas>
+
+<table>
+    <thead>
+        <tr>
+            <th>ID</th>
+            <th>Attack</th>
+            <th>Status</th>
+            <th>Confidence</th>
+        </tr>
+    </thead>
+    <tbody id="logTable"></tbody>
+</table>
+
+<audio id="alertSound">
+    <source src="https://www.soundjay.com/buttons/beep-01a.mp3">
+</audio>
+
+<script>
+let attackerData = [];
+let defenderData = [];
+let labels = [];
+
+const ctx = document.getElementById('chart').getContext('2d');
+
+const chart = new Chart(ctx, {
+    type: 'line',
+    data: {
+        labels: labels,
+        datasets: [
+            {
+                label: 'Attacker',
+                data: attackerData,
+                borderColor: 'red',
+                tension: 0.4
+            },
+            {
+                label: 'Defender',
+                data: defenderData,
+                borderColor: 'lime',
+                tension: 0.4
+            }
+        ]
+    }
+});
+
+async function loadLogs() {
+    const res = await fetch('/logs');
+    const data = await res.json();
+
+    const table = document.getElementById("logTable");
+    table.innerHTML = "";
+
+    let breach = false;
+
+    data.logs.reverse().forEach(log => {
+        if (log.status.includes("Breached")) breach = true;
+
+        table.innerHTML += `
+            <tr>
+                <td>${log.id}</td>
+                <td>${log.attack}</td>
+                <td class="${log.status.includes('Breached') ? 'breached' : 'blocked'}">
+                    ${log.status}
+                </td>
+                <td>${log.confidence}%</td>
+            </tr>
+        `;
+    });
+
+    document.getElementById("attackerScore").innerText = data.attacker;
+    document.getElementById("defenderScore").innerText = data.defender;
+
+    let dom = "Neutral";
+    if (data.attacker > data.defender) dom = "Attacker ⚠️";
+    else if (data.defender > data.attacker) dom = "Defender 🛡️";
+
+    document.getElementById("dominance").innerText = dom;
+
+    labels.push("");
+    attackerData.push(data.attacker);
+    defenderData.push(data.defender);
+
+    if (labels.length > 20) {
+        labels.shift();
+        attackerData.shift();
+        defenderData.shift();
+    }
+
+    chart.update();
+
+    if (breach) {
+        document.getElementById("alertSound").play();
+        document.body.style.boxShadow = "0 0 50px red";
+        setTimeout(() => {
+            document.body.style.boxShadow = "none";
+        }, 300);
+    }
+}
+
+setInterval(loadLogs, 2000);
+</script>
+
+</body>
+</html>
